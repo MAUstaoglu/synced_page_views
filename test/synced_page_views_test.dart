@@ -33,8 +33,18 @@ void main() {
     testWidgets('should call onPageChanged when page changes', (WidgetTester tester) async {
       int? changedToPage;
       
-      final primaryPages = List.generate(3, (i) => Container(key: Key('primary_$i')));
-      final secondaryPages = List.generate(3, (i) => Container(key: Key('secondary_$i')));
+      final primaryPages = List.generate(3, (i) => Container(
+        key: Key('primary_$i'),
+        color: Colors.blue,
+        width: 400,
+        height: 400,
+      ));
+      final secondaryPages = List.generate(3, (i) => Container(
+        key: Key('secondary_$i'),
+        color: Colors.red,
+        width: 400,
+        height: 400,
+      ));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -50,11 +60,26 @@ void main() {
         ),
       );
 
-      // Simulate page change by dragging
-      await tester.drag(find.byType(PageView).first, const Offset(-300, 0));
+      // Wait for initial build
+      await tester.pumpAndSettle();
+      
+      // Initially should be on page 0 (or null if not called yet)
+      expect(changedToPage, isNull);
+
+      // Drag to next page - use a more aggressive swipe
+      final pageView = find.byType(PageView).first;
+      await tester.fling(pageView, const Offset(-400, 0), 800.0);
       await tester.pumpAndSettle();
 
+      // Should have changed to page 1
       expect(changedToPage, 1);
+      
+      // Drag to next page again
+      await tester.fling(pageView, const Offset(-400, 0), 800.0);
+      await tester.pumpAndSettle();
+
+      // Should have changed to page 2
+      expect(changedToPage, 2);
     });
 
     testWidgets('should handle tap on secondary page', (WidgetTester tester) async {
