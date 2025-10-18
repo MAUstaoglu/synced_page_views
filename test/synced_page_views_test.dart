@@ -4,12 +4,13 @@ import 'package:synced_page_views/synced_page_views.dart';
 
 void main() {
   group('SyncedPageViews', () {
-    testWidgets('should render primary and secondary pages', (WidgetTester tester) async {
+    testWidgets('should render primary and secondary pages',
+        (WidgetTester tester) async {
       final primaryPages = [
         const Text('Primary 1'),
         const Text('Primary 2'),
       ];
-      
+
       final secondaryPages = [
         const Text('Secondary 1'),
         const Text('Secondary 2'),
@@ -30,21 +31,26 @@ void main() {
       expect(find.text('Secondary 1'), findsOneWidget);
     });
 
-    testWidgets('should call onPageChanged when page changes', (WidgetTester tester) async {
+    testWidgets('should call onPageChanged when page changes',
+        (WidgetTester tester) async {
       int? changedToPage;
-      
-      final primaryPages = List.generate(3, (i) => Container(
-        key: Key('primary_$i'),
-        color: Colors.blue,
-        width: 400,
-        height: 400,
-      ));
-      final secondaryPages = List.generate(3, (i) => Container(
-        key: Key('secondary_$i'),
-        color: Colors.red,
-        width: 400,
-        height: 400,
-      ));
+
+      final primaryPages = List.generate(
+          3,
+          (i) => Container(
+                key: Key('primary_$i'),
+                color: Colors.blue,
+                width: 400,
+                height: 400,
+              ));
+      final secondaryPages = List.generate(
+          3,
+          (i) => Container(
+                key: Key('secondary_$i'),
+                color: Colors.red,
+                width: 400,
+                height: 400,
+              ));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -62,7 +68,7 @@ void main() {
 
       // Wait for initial build
       await tester.pumpAndSettle();
-      
+
       // Initially should be on page 0 (or null if not called yet)
       expect(changedToPage, isNull);
 
@@ -73,7 +79,7 @@ void main() {
 
       // Should have changed to page 1
       expect(changedToPage, 1);
-      
+
       // Drag to next page again
       await tester.fling(pageView, const Offset(-400, 0), 800.0);
       await tester.pumpAndSettle();
@@ -82,12 +88,14 @@ void main() {
       expect(changedToPage, 2);
     });
 
-    testWidgets('should handle tap on secondary page', (WidgetTester tester) async {
+    testWidgets('should handle tap on secondary page',
+        (WidgetTester tester) async {
       int? tappedIndex;
-      
-      final primaryPages = List.generate(3, (i) => Container(key: Key('primary_$i')));
-      final secondaryPages = List.generate(3, (i) => 
-        Container(key: Key('secondary_$i'), child: Text('Tap $i')));
+
+      final primaryPages =
+          List.generate(3, (i) => Container(key: Key('primary_$i')));
+      final secondaryPages = List.generate(
+          3, (i) => Container(key: Key('secondary_$i'), child: Text('Tap $i')));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -113,7 +121,7 @@ void main() {
   group('SyncedPageViewsConfig', () {
     test('should have default values', () {
       const config = SyncedPageViewsConfig();
-      
+
       expect(config.animationDuration, const Duration(milliseconds: 300));
       expect(config.animationCurve, Curves.easeInOut);
       expect(config.scrollDirection, Axis.horizontal);
@@ -129,7 +137,7 @@ void main() {
         pageSnapping: false,
         reverse: true,
       );
-      
+
       expect(config.animationDuration, const Duration(milliseconds: 500));
       expect(config.animationCurve, Curves.bounceIn);
       expect(config.scrollDirection, Axis.vertical);
@@ -165,12 +173,12 @@ void main() {
   group('SyncedPageController', () {
     test('should initialize with default values', () {
       final controller = SyncedPageController();
-      
+
       expect(controller.currentPageIndex, 0);
       expect(controller.primaryController, isA<PageController>());
       expect(controller.secondaryController, isA<PageController>());
       expect(controller.currentPage, isA<ValueNotifier<int>>());
-      
+
       controller.dispose();
     });
 
@@ -180,9 +188,9 @@ void main() {
         primaryViewportFraction: 0.8,
         secondaryViewportFraction: 0.3,
       );
-      
+
       expect(controller.currentPageIndex, 2);
-      
+
       controller.dispose();
     });
   });

@@ -1,3 +1,8 @@
+## 1.0.1
+
+- Fixed code formatting to match Dart formatter standards
+- Improved pub.dev package score
+
 ## 1.0.0
 
 - Initial release

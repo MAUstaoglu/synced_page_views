@@ -6,37 +6,39 @@ import 'synced_page_views_data.dart';
 class SyncedPageViews extends StatefulWidget {
   /// List of widgets for the primary PageView
   final List<Widget> primaryPages;
-  
+
   /// List of widgets for the secondary PageView
   final List<Widget> secondaryPages;
-  
+
   /// Initial page index
   final int initialPage;
-  
+
   /// Viewport fraction for primary PageView (default: 1.0)
   final double primaryViewportFraction;
-  
+
   /// Viewport fraction for secondary PageView (default: 1.0)
   final double secondaryViewportFraction;
-  
+
   /// Configuration for the synchronized PageViews
   final SyncedPageViewsConfig config;
-  
+
   /// Callback when page changes
   final void Function(int index)? onPageChanged;
-  
+
   /// Callback when primary PageView is tapped
   final void Function(int index)? onPrimaryPageTap;
-  
+
   /// Callback when secondary PageView is tapped
   final void Function(int index)? onSecondaryPageTap;
-  
+
   /// Builder for the primary PageView
-  final Widget Function(BuildContext context, PageController controller, List<Widget> pages)?
+  final Widget Function(
+          BuildContext context, PageController controller, List<Widget> pages)?
       primaryBuilder;
-  
+
   /// Builder for the secondary PageView
-  final Widget Function(BuildContext context, PageController controller, List<Widget> pages)?
+  final Widget Function(
+          BuildContext context, PageController controller, List<Widget> pages)?
       secondaryBuilder;
 
   const SyncedPageViews({
@@ -59,7 +61,7 @@ class SyncedPageViews extends StatefulWidget {
   State<SyncedPageViews> createState() => _SyncedPageViewsState();
 }
 
-class _SyncedPageViewsState extends State<SyncedPageViews> 
+class _SyncedPageViewsState extends State<SyncedPageViews>
     with SyncedPageControllersMixin {
   late PageController _primaryController;
   late PageController _secondaryController;
@@ -69,28 +71,28 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
   @override
   void initState() {
     super.initState();
-    
+
     _primaryController = PageController(
       initialPage: widget.initialPage,
       viewportFraction: widget.primaryViewportFraction,
     );
-    
+
     _secondaryController = PageController(
       initialPage: widget.initialPage,
       viewportFraction: widget.secondaryViewportFraction,
     );
 
     _currentPage = ValueNotifier<int>(widget.initialPage);
-    
+
     // Initialize sync functionality
     initializeSync();
-    
+
     // Start syncing the controllers
     startSync(_primaryController, _secondaryController);
-    
+
     // Listen for page changes
     _primaryController.addListener(_updateCurrentPage);
-    
+
     // Create sync data
     _syncData = SyncedPageViewsData(
       primaryController: _primaryController,
@@ -123,14 +125,14 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
 
   @override
   Widget build(BuildContext context) {
-
     return SyncedPageViewsProvider(
       data: _syncData,
       child: Column(
         children: [
           // Primary PageView
           Expanded(
-            child: widget.primaryBuilder?.call(context, _primaryController, widget.primaryPages) ??
+            child: widget.primaryBuilder
+                    ?.call(context, _primaryController, widget.primaryPages) ??
                 _buildPageView(
                   controller: _primaryController,
                   pages: widget.primaryPages,
@@ -140,7 +142,8 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
           ),
           // Secondary PageView
           Expanded(
-            child: widget.secondaryBuilder?.call(context, _secondaryController, widget.secondaryPages) ??
+            child: widget.secondaryBuilder?.call(
+                    context, _secondaryController, widget.secondaryPages) ??
                 _buildPageView(
                   controller: _secondaryController,
                   pages: widget.secondaryPages,
@@ -165,7 +168,7 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
       valueListenable: currentScrolling,
       builder: (context, SyncedPageViewType currentlyScrolling, _) {
         // Enable snapping only if config says true AND this view is currently scrolling
-        final bool effectivePageSnapping = 
+        final bool effectivePageSnapping =
             widget.config.pageSnapping && (currentlyScrolling == viewType);
 
         return PageView.builder(
@@ -202,7 +205,9 @@ class SyncedPageViewsProvider extends InheritedWidget {
   });
 
   static SyncedPageViewsData? of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<SyncedPageViewsProvider>()?.data;
+    return context
+        .dependOnInheritedWidgetOfExactType<SyncedPageViewsProvider>()
+        ?.data;
   }
 
   @override
