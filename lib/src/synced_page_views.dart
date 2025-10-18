@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'synced_page_controllers_hook.dart';
+import 'synced_page_controllers_mixin.dart';
 import 'synced_page_views_data.dart';
 
 /// A widget that provides synchronized PageViews with bidirectional scrolling sync
@@ -135,6 +135,7 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
                   controller: _primaryController,
                   pages: widget.primaryPages,
                   onPageTap: widget.onPrimaryPageTap,
+                  viewType: SyncedPageViewType.primary,
                 ),
           ),
           // Secondary PageView
@@ -144,6 +145,7 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
                   controller: _secondaryController,
                   pages: widget.secondaryPages,
                   onPageTap: widget.onSecondaryPageTap,
+                  viewType: SyncedPageViewType.secondary,
                 ),
           ),
         ],
@@ -154,24 +156,36 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
   Widget _buildPageView({
     required PageController controller,
     required List<Widget> pages,
+    required SyncedPageViewType viewType,
     void Function(int index)? onPageTap,
   }) {
-    return PageView.builder(
-      controller: controller,
-      scrollDirection: widget.config.scrollDirection,
-      reverse: widget.config.reverse,
-      physics: widget.config.physics,
-      pageSnapping: widget.config.pageSnapping,
-      itemCount: pages.length,
-      itemBuilder: (context, index) {
-        final page = pages[index];
-        if (onPageTap != null) {
-          return GestureDetector(
-            onTap: () => onPageTap(index),
-            child: page,
-          );
-        }
-        return page;
+    // Only the currently scrolling PageView should have pageSnapping enabled
+    // to avoid conflicts between the two synchronized views.
+    return ValueListenableBuilder(
+      valueListenable: currentScrolling,
+      builder: (context, SyncedPageViewType currentlyScrolling, _) {
+        // Enable snapping only if config says true AND this view is currently scrolling
+        final bool effectivePageSnapping = 
+            widget.config.pageSnapping && (currentlyScrolling == viewType);
+
+        return PageView.builder(
+          controller: controller,
+          scrollDirection: widget.config.scrollDirection,
+          reverse: widget.config.reverse,
+          physics: widget.config.physics,
+          pageSnapping: effectivePageSnapping,
+          itemCount: pages.length,
+          itemBuilder: (context, index) {
+            final page = pages[index];
+            if (onPageTap != null) {
+              return GestureDetector(
+                onTap: () => onPageTap(index),
+                child: page,
+              );
+            }
+            return page;
+          },
+        );
       },
     );
   }

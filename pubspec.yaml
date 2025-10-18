@@ -1,6 +1,9 @@
 name: synced_page_views
-description: A Flutter package for creating synchronized PageViews with bidirectional scrolling sync
+description: A Flutter package for creating synchronized PageViews with bidirectional scrolling sync. Perfect for carousels, image galleries, and synced content displays.
 version: 1.0.0
+homepage: https://github.com/aliustaoglu/synced_page_views
+repository: https://github.com/aliustaoglu/synced_page_views
+issue_tracker: https://github.com/aliustaoglu/synced_page_views/issues
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
