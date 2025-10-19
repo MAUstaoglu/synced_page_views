@@ -2,6 +2,14 @@
 
 A Flutter package for creating synchronized PageViews with bidirectional scrolling sync. Perfect for creating interfaces where two PageViews need to stay in sync, such as main content with thumbnails, tabs with content, or any dual-pane scrolling interface.
 
+## Demo
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MAUstaoglu/synced_page_views/main/screenshots/basic_example.gif" alt="Basic Example" width="250"/>
+  <img src="https://raw.githubusercontent.com/MAUstaoglu/synced_page_views/main/screenshots/overlapping_example.gif" alt="Overlapping Example" width="250"/>
+  <img src="https://raw.githubusercontent.com/MAUstaoglu/synced_page_views/main/screenshots/layout_comparison.gif" alt="Layout Comparison" width="250"/>
+</p>
+
 ## Features
 
 - 🔄 **Bidirectional Sync**: Scrolling one PageView automatically syncs the other
