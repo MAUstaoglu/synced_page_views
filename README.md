@@ -9,7 +9,8 @@ A Flutter package for creating synchronized PageViews with bidirectional scrolli
 - ⚙️ **Highly Customizable**: Custom viewport fractions, animation curves, and builders
 - 🔧 **No External Dependencies**: Built with pure Flutter, no additional packages required
 - 🎨 **Custom Builders**: Override default PageView builders for complete control
-- 📱 **Responsive**: Works with different screen sizes and orientations
+- � **Flexible Layouts**: Choose between Stack, Column, or Row layouts
+- �📱 **Responsive**: Works with different screen sizes and orientations
 
 ## Installation
 
@@ -28,37 +29,70 @@ dependencies:
 import 'package:flutter/material.dart';
 import 'package:synced_page_views/synced_page_views.dart';
 
-class MyPage extends StatelessWidget {
+class BasicExample extends StatefulWidget {
+  const BasicExample({super.key});
+
+  @override
+  State<BasicExample> createState() => _BasicExampleState();
+}
+
+class _BasicExampleState extends State<BasicExample> {
+  int _currentPage = 0;
+
+  final List<Color> _colors = [
+    Colors.red,
+    Colors.green,
+    Colors.blue,
+    Colors.orange,
+    Colors.purple,
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final primaryPages = List.generate(5, (index) => 
-      Container(
-        color: Colors.blue[100 * (index + 1)],
-        child: Center(child: Text('Page $index')),
-      ),
-    );
-
-    final secondaryPages = List.generate(5, (index) => 
-      Container(
-        margin: EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: Colors.blue[100 * (index + 1)],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(child: Text('Thumb $index')),
-      ),
-    );
-
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Synced PageViews'),
+      ),
       body: SyncedPageViews(
-        primaryPages: primaryPages,
-        secondaryPages: secondaryPages,
+        itemCount: _colors.length,
+        primaryItemBuilder: (context, index) {
+          return Container(
+            color: _colors[index],
+            child: Center(
+              child: Text(
+                'Page ${index + 1}',
+                style: const TextStyle(color: Colors.white, fontSize: 32),
+              ),
+            ),
+          );
+        },
+        secondaryItemBuilder: (context, index) {
+          return Container(
+            margin: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: _colors[index],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                '${index + 1}',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          );
+        },
         primaryViewportFraction: 1.0,
         secondaryViewportFraction: 0.3,
-        onPageChanged: (index) => print('Page: $index'),
-        onSecondaryPageTap: (index) {
-          final syncData = SyncedPageViewsProvider.of(context);
-          syncData?.animateToPage(index);
+        layoutBuilder: (primary, secondary) => Column(
+          children: [
+            Expanded(child: primary),
+            SizedBox(height: 100, child: secondary),
+          ],
+        ),
+        onPageChanged: (index) {
+          setState(() {
+            _currentPage = index;
+          });
         },
       ),
     );
@@ -66,59 +100,83 @@ class MyPage extends StatelessWidget {
 }
 ```
 
-### Advanced Example with Custom Builders
+### Layout Options
+
+The package supports flexible layouts using the `layoutBuilder` parameter:
+
+#### Stack Layout (Default)
+Views overlap each other - perfect for overlays like iOS camera interface:
 
 ```dart
 SyncedPageViews(
-  primaryPages: mainContentPages,
-  secondaryPages: thumbnailPages,
-  config: SyncedPageViewsConfig(
-    animationDuration: Duration(milliseconds: 500),
-    animationCurve: Curves.elasticOut,
-    scrollDirection: Axis.horizontal,
+  itemCount: 5,
+  primaryItemBuilder: (context, index) => YourPrimaryWidget(index),
+  secondaryItemBuilder: (context, index) => YourSecondaryWidget(index),
+  layoutBuilder: (primary, secondary) => Stack(
+    children: [
+      primary,
+      Align(
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(height: 150, child: secondary),
+      ),
+    ],
   ),
-  // Custom builder for the main content
-  primaryBuilder: (context, controller, pages) {
-    return PageView.builder(
-      controller: controller,
-      itemCount: pages.length,
-      itemBuilder: (context, index) => AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        child: pages[index],
-      ),
-    );
-  },
-  // Custom builder for thumbnails
-  secondaryBuilder: (context, controller, pages) {
-    return SizedBox(
-      height: 100,
-      child: PageView.builder(
-        controller: controller,
-        itemCount: pages.length,
-        itemBuilder: (context, index) => GestureDetector(
-          onTap: () {
-            SyncedPageViewsProvider.of(context)?.animateToPage(index);
-          },
-          child: pages[index],
-        ),
-      ),
-    );
-  },
 )
 ```
 
-### Using SyncedPageController Directly
-
-If you need maximum control, you can use `SyncedPageController` directly:
+#### Column Layout
+Views arranged vertically - ideal for main content with bottom navigation:
 
 ```dart
-class CustomSyncedPageViews extends StatefulWidget {
+SyncedPageViews(
+  itemCount: 5,
+  primaryItemBuilder: (context, index) => YourPrimaryWidget(index),
+  secondaryItemBuilder: (context, index) => YourSecondaryWidget(index),
+  layoutBuilder: (primary, secondary) => Column(
+    children: [
+      Expanded(child: primary),
+      Expanded(child: secondary),
+    ],
+  ),
+)
+```
+
+#### Row Layout
+Views arranged horizontally - perfect for side-by-side comparisons:
+
+```dart
+SyncedPageViews(
+  itemCount: 5,
+  primaryItemBuilder: (context, index) => YourPrimaryWidget(index),
+  secondaryItemBuilder: (context, index) => YourSecondaryWidget(index),
+  config: const SyncedPageViewsConfig(
+    scrollDirection: Axis.vertical, // Important for row layout
+  ),
+  layoutBuilder: (primary, secondary) => Row(
+    children: [
+      Expanded(child: primary),
+      Expanded(child: secondary),
+    ],
+  ),
+)
+```
+
+### Using External Controller
+
+### Using External Controller
+
+For maximum control, you can create and manage a `SyncedPageController` yourself:
+
+```dart
+class CustomExample extends StatefulWidget {
+  const CustomExample({super.key});
+
   @override
-  State<CustomSyncedPageViews> createState() => _CustomSyncedPageViewsState();
+  State<CustomExample> createState() => _CustomExampleState();
 }
 
-class _CustomSyncedPageViewsState extends State<CustomSyncedPageViews> {
-  late SyncedPageController _controller;
+class _CustomExampleState extends State<CustomExample> {
+  late final SyncedPageController _controller;
 
   @override
   void initState() {
@@ -138,28 +196,76 @@ class _CustomSyncedPageViewsState extends State<CustomSyncedPageViews> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: PageView.builder(
-            controller: _controller.primaryController,
-            itemBuilder: (context, index) => YourPrimaryPage(index),
-          ),
-        ),
-        SizedBox(
-          height: 100,
-          child: PageView.builder(
-            controller: _controller.secondaryController,
-            itemBuilder: (context, index) => GestureDetector(
-              onTap: () => _controller.animateToPage(index),
-              child: YourSecondaryPage(index),
-            ),
-          ),
-        ),
-      ],
+    return Scaffold(
+      body: SyncedPageViews(
+        controller: _controller,  // Pass your own controller
+        itemCount: 5,
+        primaryItemBuilder: (context, index) => YourPrimaryWidget(index),
+        secondaryItemBuilder: (context, index) => YourSecondaryWidget(index),
+        onSecondaryPageTap: (index) {
+          // Use the controller to navigate
+          _controller.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Programmatically navigate
+          _controller.animateToPage(
+            (_controller.currentPageIndex + 1) % 5,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+        child: const Icon(Icons.arrow_forward),
+      ),
     );
   }
 }
+```
+
+### Advanced Example with Custom Configuration
+
+```dart
+SyncedPageViews(
+  itemCount: 10,
+  primaryItemBuilder: (context, index) => MyContentPage(index),
+  secondaryItemBuilder: (context, index) => MyThumbnail(index),
+  initialPage: 0,
+  primaryViewportFraction: 0.9,
+  secondaryViewportFraction: 0.7,
+  config: const SyncedPageViewsConfig(
+    animationDuration: Duration(milliseconds: 500),
+    animationCurve: Curves.elasticOut,
+    scrollDirection: Axis.horizontal,
+    pageSnapping: true,
+    reverse: false,
+  ),
+  layoutBuilder: (primary, secondary) => Stack(
+    children: [
+      primary,
+      Positioned(
+        bottom: 20,
+        left: 0,
+        right: 0,
+        height: 120,
+        child: secondary,
+      ),
+    ],
+  ),
+  onPageChanged: (index) {
+    print('Page changed to: $index');
+  },
+  onPrimaryPageTap: (index) {
+    print('Primary page $index tapped');
+  },
+  onSecondaryPageTap: (index) {
+    print('Secondary page $index tapped');
+  },
+)
 ```
 
 ## API Reference
@@ -168,17 +274,18 @@ class _CustomSyncedPageViewsState extends State<CustomSyncedPageViews> {
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `primaryPages` | `List<Widget>` | Pages for the main PageView |
-| `secondaryPages` | `List<Widget>` | Pages for the secondary PageView |
+| `itemCount` | `int` | Number of pages (required) |
+| `primaryItemBuilder` | `Widget Function(BuildContext, int)` | Builder for primary pages (required) |
+| `secondaryItemBuilder` | `Widget Function(BuildContext, int)` | Builder for secondary pages (required) |
+| `controller` | `SyncedPageController?` | Optional external controller |
 | `initialPage` | `int` | Initial page index (default: 0) |
 | `primaryViewportFraction` | `double` | Viewport fraction for primary PageView (default: 1.0) |
 | `secondaryViewportFraction` | `double` | Viewport fraction for secondary PageView (default: 1.0) |
-| `config` | `SyncedPageViewsConfig` | Configuration for animations and behavior |
-| `onPageChanged` | `Function(int)?` | Callback when page changes |
-| `onPrimaryPageTap` | `Function(int)?` | Callback when primary page is tapped |
-| `onSecondaryPageTap` | `Function(int)?` | Callback when secondary page is tapped |
-| `primaryBuilder` | `Widget Function(...)?` | Custom builder for primary PageView |
-| `secondaryBuilder` | `Widget Function(...)?` | Custom builder for secondary PageView |
+| `config` | `SyncedPageViewsConfig?` | Configuration for animations and behavior |
+| `layoutBuilder` | `Widget Function(Widget, Widget)?` | Custom layout builder (default: Stack) |
+| `onPageChanged` | `void Function(int)?` | Callback when page changes |
+| `onPrimaryPageTap` | `void Function(int)?` | Callback when primary page is tapped |
+| `onSecondaryPageTap` | `void Function(int)?` | Callback when secondary page is tapped |
 
 ### SyncedPageViewsConfig
 
@@ -199,10 +306,10 @@ For advanced use cases, `SyncedPageController` provides direct access to synchro
 |-----------------|------|-------------|
 | `primaryController` | `PageController` | The primary PageController |
 | `secondaryController` | `PageController` | The secondary PageController |
-| `currentPage` | `ValueNotifier<int>` | Current page notifier |
-| `currentPageIndex` | `int` | Current page index |
-| `animateToPage(int, {Duration, Curve})` | `Future<void>` | Animate to specific page |
-| `jumpToPage(int)` | `void` | Jump to specific page |
+| `currentPageNotifier` | `ValueNotifier<int>` | Current page notifier |
+| `currentPageIndex` | `int` | Current page index getter |
+| `animateToPage(int, {Duration?, Curve?})` | `Future<void>` | Animate to specific page |
+| `jumpToPage(int)` | `void` | Jump to specific page without animation |
 
 ## Use Cases
 

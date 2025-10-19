@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:synced_page_views/synced_page_views.dart';
+import 'basic_example.dart';
+import 'layout_comparison_example.dart';
+import 'overlapping_example.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,196 +19,124 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const SyncedPageViewsExample(),
+      home: const ExamplesHome(),
     );
   }
 }
 
-class SyncedPageViewsExample extends StatefulWidget {
-  const SyncedPageViewsExample({super.key});
-
-  @override
-  State<SyncedPageViewsExample> createState() => _SyncedPageViewsExampleState();
-}
-
-class _SyncedPageViewsExampleState extends State<SyncedPageViewsExample> {
-  int _currentPage = 0;
-
-  // Sample data for the pages
-  final List<Color> _colors = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.orange,
-    Colors.purple,
-  ];
-
-  final List<String> _titles = [
-    'Page 1',
-    'Page 2',
-    'Page 3',
-    'Page 4',
-    'Page 5',
-  ];
+class ExamplesHome extends StatelessWidget {
+  const ExamplesHome({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Synced PageViews Demo'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Synced PageViews Examples'),
         centerTitle: true,
       ),
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
         children: [
-          // Current page indicator
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Current Page: ${_currentPage + 1} of ${_titles.length}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+          _buildExampleCard(
+            context: context,
+            title: 'Basic Example',
+            description:
+                'Simple synced PageViews with color pages and thumbnails',
+            icon: Icons.view_carousel,
+            color: Colors.blue,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BasicExample()),
+              );
+            },
           ),
-
-          // SyncedPageViews widget
-          Expanded(
-            child: SyncedPageViews(
-              primaryPages: _buildPrimaryPages(),
-              secondaryPages: _buildSecondaryPages(),
-              initialPage: 0,
-              primaryViewportFraction: 1.0,
-              secondaryViewportFraction: 0.8,
-
-              config: const SyncedPageViewsConfig(
-                animationDuration: Duration(milliseconds: 300),
-                animationCurve: Curves.easeInOut,
-                scrollDirection: Axis.horizontal,
-                pageSnapping: true,
-              ),
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-              },
-              onPrimaryPageTap: (index) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Primary page $index tapped'),
-                    duration: const Duration(milliseconds: 500),
-                  ),
-                );
-              },
-              onSecondaryPageTap: (index) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Secondary page $index tapped'),
-                    duration: const Duration(milliseconds: 500),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // Page dots indicator
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _titles.length,
-                (index) => Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                  width: _currentPage == index ? 12.0 : 8.0,
-                  height: _currentPage == index ? 12.0 : 8.0,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _currentPage == index
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey.shade400,
-                  ),
+          const SizedBox(height: 16),
+          _buildExampleCard(
+            context: context,
+            title: 'Layout Comparison',
+            description: 'Compare Stack, Column, and Row layouts side by side',
+            icon: Icons.dashboard,
+            color: Colors.green,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LayoutComparisonExample(),
                 ),
-              ),
-            ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildExampleCard(
+            context: context,
+            title: 'Overlapping Example',
+            description:
+                'Full-screen pages with overlapping selector at bottom',
+            icon: Icons.layers,
+            color: Colors.orange,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OverlappingExample(),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  List<Widget> _buildPrimaryPages() {
-    return List.generate(
-      _titles.length,
-      (index) => Container(
-        margin: const EdgeInsets.all(8.0),
-        decoration: BoxDecoration(
-          color: _colors[index].withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(16.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 8.0,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildExampleCard({
+    required BuildContext context,
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 4,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Row(
             children: [
-              Icon(Icons.pages, size: 80, color: Colors.white),
-              const SizedBox(height: 16),
-              Text(
-                _titles[index],
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 32, color: color),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Primary View',
-                style: TextStyle(fontSize: 16, color: Colors.white70),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildSecondaryPages() {
-    return List.generate(
-      _titles.length,
-      (index) => Container(
-        margin: const EdgeInsets.all(8.0),
-        decoration: BoxDecoration(
-          color: _colors[index].withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(12.0),
-          border: Border.all(color: _colors[index], width: 2),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.preview, size: 48, color: _colors[index]),
-              const SizedBox(height: 8),
-              Text(
-                _titles[index],
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: _colors[index],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Secondary View',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _colors[index].withValues(alpha: 0.7),
-                ),
-              ),
+              const Icon(Icons.arrow_forward_ios, size: 16),
             ],
           ),
         ),

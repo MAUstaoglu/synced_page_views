@@ -1,3 +1,15 @@
+## 1.1.0
+
+- **New Feature**: Added configurable layout system
+  - Stack layout: Views overlap (perfect for overlays)
+  - Column layout: Views arranged vertically
+  - Row layout: Views arranged horizontally
+- Added `SyncedPageViewsLayout` enum with three layout options
+- Added `layout` parameter to `SyncedPageViewsConfig`
+- Updated examples to demonstrate all three layout types
+- New layout comparison example in the demo app
+- Updated overlapping example to use Stack layout with custom builders
+
 ## 1.0.1
 
 - Fixed code formatting to match Dart formatter standards

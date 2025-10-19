@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'synced_page_controller.dart';
 import 'synced_page_controllers_mixin.dart';
 import 'synced_page_views_data.dart';
 
 /// A widget that provides synchronized PageViews with bidirectional scrolling sync
 class SyncedPageViews extends StatefulWidget {
-  /// List of widgets for the primary PageView
-  final List<Widget> primaryPages;
+  /// Number of pages in both PageViews
+  final int itemCount;
 
-  /// List of widgets for the secondary PageView
-  final List<Widget> secondaryPages;
+  /// Builder for primary page items
+  final IndexedWidgetBuilder primaryItemBuilder;
+
+  /// Builder for secondary page items
+  final IndexedWidgetBuilder secondaryItemBuilder;
 
   /// Initial page index
   final int initialPage;
@@ -31,20 +35,20 @@ class SyncedPageViews extends StatefulWidget {
   /// Callback when secondary PageView is tapped
   final void Function(int index)? onSecondaryPageTap;
 
-  /// Builder for the primary PageView
-  final Widget Function(
-          BuildContext context, PageController controller, List<Widget> pages)?
-      primaryBuilder;
+  /// Builder function to arrange primary and secondary views
+  /// Receives the primary and secondary widgets and returns the layout
+  /// Default is a Stack layout
+  final Widget Function(Widget primary, Widget secondary)? layoutBuilder;
 
-  /// Builder for the secondary PageView
-  final Widget Function(
-          BuildContext context, PageController controller, List<Widget> pages)?
-      secondaryBuilder;
+  /// Optional SyncedPageController to use
+  /// If provided, this controller will be used instead of creating internal controllers
+  final SyncedPageController? controller;
 
   const SyncedPageViews({
     super.key,
-    required this.primaryPages,
-    required this.secondaryPages,
+    required this.itemCount,
+    required this.primaryItemBuilder,
+    required this.secondaryItemBuilder,
     this.initialPage = 0,
     this.primaryViewportFraction = 1.0,
     this.secondaryViewportFraction = 1.0,
@@ -52,10 +56,9 @@ class SyncedPageViews extends StatefulWidget {
     this.onPageChanged,
     this.onPrimaryPageTap,
     this.onSecondaryPageTap,
-    this.primaryBuilder,
-    this.secondaryBuilder,
-  }) : assert(primaryPages.length == secondaryPages.length,
-            'Primary and secondary pages must have the same length');
+    this.layoutBuilder,
+    this.controller,
+  });
 
   @override
   State<SyncedPageViews> createState() => _SyncedPageViewsState();
@@ -67,31 +70,47 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
   late PageController _secondaryController;
   late ValueNotifier<int> _currentPage;
   late SyncedPageViewsData _syncData;
+  bool _ownsControllers = false;
 
   @override
   void initState() {
     super.initState();
 
-    _primaryController = PageController(
-      initialPage: widget.initialPage,
-      viewportFraction: widget.primaryViewportFraction,
-    );
-
-    _secondaryController = PageController(
-      initialPage: widget.initialPage,
-      viewportFraction: widget.secondaryViewportFraction,
-    );
-
-    _currentPage = ValueNotifier<int>(widget.initialPage);
-
-    // Initialize sync functionality
+    // Always initialize sync (needed for currentScrolling notifier)
     initializeSync();
 
-    // Start syncing the controllers
-    startSync(_primaryController, _secondaryController);
+    // Use provided controller or create new ones
+    if (widget.controller != null) {
+      _primaryController = widget.controller!.primaryController;
+      _secondaryController = widget.controller!.secondaryController;
+      _currentPage = widget.controller!.currentPage;
+      _ownsControllers = false;
+      // Don't start sync - the SyncedPageController handles it
+    } else {
+      _primaryController = PageController(
+        initialPage: widget.initialPage,
+        viewportFraction: widget.primaryViewportFraction,
+      );
+
+      _secondaryController = PageController(
+        initialPage: widget.initialPage,
+        viewportFraction: widget.secondaryViewportFraction,
+      );
+
+      _currentPage = ValueNotifier<int>(widget.initialPage);
+      _ownsControllers = true;
+
+      // Start syncing the controllers
+      startSync(_primaryController, _secondaryController);
+    }
 
     // Listen for page changes
-    _primaryController.addListener(_updateCurrentPage);
+    if (_ownsControllers) {
+      _primaryController.addListener(_updateCurrentPage);
+    } else {
+      // When using external controller, listen to its currentPage notifier
+      _currentPage.addListener(_notifyPageChanged);
+    }
 
     // Create sync data
     _syncData = SyncedPageViewsData(
@@ -112,13 +131,23 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
     }
   }
 
+  void _notifyPageChanged() {
+    widget.onPageChanged?.call(_currentPage.value);
+  }
+
   @override
   void dispose() {
-    _primaryController.removeListener(_updateCurrentPage);
-    stopSync(_primaryController, _secondaryController);
-    _primaryController.dispose();
-    _secondaryController.dispose();
-    _currentPage.dispose();
+    // Remove the appropriate listener
+    if (_ownsControllers) {
+      _primaryController.removeListener(_updateCurrentPage);
+      stopSync(_primaryController, _secondaryController);
+      _primaryController.dispose();
+      _secondaryController.dispose();
+      _currentPage.dispose();
+    } else {
+      _currentPage.removeListener(_notifyPageChanged);
+    }
+
     _syncData.isScrolling.dispose();
     super.dispose();
   }
@@ -127,40 +156,65 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
   Widget build(BuildContext context) {
     return SyncedPageViewsProvider(
       data: _syncData,
-      child: Column(
-        children: [
-          // Primary PageView
-          Expanded(
-            child: widget.primaryBuilder
-                    ?.call(context, _primaryController, widget.primaryPages) ??
-                _buildPageView(
-                  controller: _primaryController,
-                  pages: widget.primaryPages,
-                  onPageTap: widget.onPrimaryPageTap,
-                  viewType: SyncedPageViewType.primary,
-                ),
-          ),
-          // Secondary PageView
-          Expanded(
-            child: widget.secondaryBuilder?.call(
-                    context, _secondaryController, widget.secondaryPages) ??
-                _buildPageView(
-                  controller: _secondaryController,
-                  pages: widget.secondaryPages,
-                  onPageTap: widget.onSecondaryPageTap,
-                  viewType: SyncedPageViewType.secondary,
-                ),
-          ),
-        ],
-      ),
+      child: _buildLayoutWidget(),
+    );
+  }
+
+  Widget _buildLayoutWidget() {
+    // Wrap primary item builder with tap gesture if needed
+    Widget primaryItemBuilderWithTap(BuildContext context, int index) {
+      final item = widget.primaryItemBuilder(context, index);
+      if (widget.onPrimaryPageTap != null) {
+        return GestureDetector(
+          onTap: () => widget.onPrimaryPageTap!(index),
+          child: item,
+        );
+      }
+      return item;
+    }
+
+    // Wrap secondary item builder with tap gesture if needed
+    Widget secondaryItemBuilderWithTap(BuildContext context, int index) {
+      final item = widget.secondaryItemBuilder(context, index);
+      if (widget.onSecondaryPageTap != null) {
+        return GestureDetector(
+          onTap: () => widget.onSecondaryPageTap!(index),
+          child: item,
+        );
+      }
+      return item;
+    }
+
+    final primaryView = _buildPageView(
+      controller: _primaryController,
+      itemCount: widget.itemCount,
+      itemBuilder: primaryItemBuilderWithTap,
+      viewType: SyncedPageViewType.primary,
+    );
+
+    final secondaryView = _buildPageView(
+      controller: _secondaryController,
+      itemCount: widget.itemCount,
+      itemBuilder: secondaryItemBuilderWithTap,
+      viewType: SyncedPageViewType.secondary,
+    );
+
+    // Use custom layoutBuilder if provided, otherwise use default Stack
+    if (widget.layoutBuilder != null) {
+      return widget.layoutBuilder!(primaryView, secondaryView);
+    }
+
+    // Default layout is Stack
+    return Stack(
+      children: [primaryView, secondaryView],
     );
   }
 
   Widget _buildPageView({
     required PageController controller,
-    required List<Widget> pages,
+    required int itemCount,
+    required IndexedWidgetBuilder itemBuilder,
     required SyncedPageViewType viewType,
-    void Function(int index)? onPageTap,
   }) {
     // Only the currently scrolling PageView should have pageSnapping enabled
     // to avoid conflicts between the two synchronized views.
@@ -177,17 +231,8 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
           reverse: widget.config.reverse,
           physics: widget.config.physics,
           pageSnapping: effectivePageSnapping,
-          itemCount: pages.length,
-          itemBuilder: (context, index) {
-            final page = pages[index];
-            if (onPageTap != null) {
-              return GestureDetector(
-                onTap: () => onPageTap(index),
-                child: page,
-              );
-            }
-            return page;
-          },
+          itemCount: itemCount,
+          itemBuilder: itemBuilder,
         );
       },
     );

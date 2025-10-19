@@ -6,22 +6,15 @@ void main() {
   group('SyncedPageViews', () {
     testWidgets('should render primary and secondary pages',
         (WidgetTester tester) async {
-      final primaryPages = [
-        const Text('Primary 1'),
-        const Text('Primary 2'),
-      ];
-
-      final secondaryPages = [
-        const Text('Secondary 1'),
-        const Text('Secondary 2'),
-      ];
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: SyncedPageViews(
-              primaryPages: primaryPages,
-              secondaryPages: secondaryPages,
+              itemCount: 2,
+              primaryItemBuilder: (context, index) =>
+                  Text('Primary ${index + 1}'),
+              secondaryItemBuilder: (context, index) =>
+                  Text('Secondary ${index + 1}'),
             ),
           ),
         ),
@@ -35,29 +28,23 @@ void main() {
         (WidgetTester tester) async {
       int? changedToPage;
 
-      final primaryPages = List.generate(
-          3,
-          (i) => Container(
-                key: Key('primary_$i'),
-                color: Colors.blue,
-                width: 400,
-                height: 400,
-              ));
-      final secondaryPages = List.generate(
-          3,
-          (i) => Container(
-                key: Key('secondary_$i'),
-                color: Colors.red,
-                width: 400,
-                height: 400,
-              ));
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: SyncedPageViews(
-              primaryPages: primaryPages,
-              secondaryPages: secondaryPages,
+              itemCount: 3,
+              primaryItemBuilder: (context, index) => Container(
+                key: Key('primary_$index'),
+                color: Colors.blue,
+                width: 400,
+                height: 400,
+              ),
+              secondaryItemBuilder: (context, index) => Container(
+                key: Key('secondary_$index'),
+                color: Colors.red,
+                width: 400,
+                height: 400,
+              ),
               onPageChanged: (index) {
                 changedToPage = index;
               },
@@ -92,17 +79,17 @@ void main() {
         (WidgetTester tester) async {
       int? tappedIndex;
 
-      final primaryPages =
-          List.generate(3, (i) => Container(key: Key('primary_$i')));
-      final secondaryPages = List.generate(
-          3, (i) => Container(key: Key('secondary_$i'), child: Text('Tap $i')));
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: SyncedPageViews(
-              primaryPages: primaryPages,
-              secondaryPages: secondaryPages,
+              itemCount: 3,
+              primaryItemBuilder: (context, index) =>
+                  Container(key: Key('primary_$index')),
+              secondaryItemBuilder: (context, index) => Container(
+                key: Key('secondary_$index'),
+                child: Text('Tap $index'),
+              ),
               onSecondaryPageTap: (index) {
                 tappedIndex = index;
               },
