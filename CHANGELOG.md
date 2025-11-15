@@ -1,3 +1,11 @@
+## 2.0.0
+
+- **Breaking Change**: Made `controller` and individual parameters mutually exclusive
+  - `initialPage`, `primaryViewportFraction`, and `secondaryViewportFraction` are now nullable
+  - When using `controller`, do not provide the individual parameters (similar to Container's color/decoration)
+  - Added assertion to prevent conflicting parameter usage
+  - Improved API clarity and prevents developer confusion
+
 ## 1.1.0
 
 - **New Feature**: Added configurable layout system
