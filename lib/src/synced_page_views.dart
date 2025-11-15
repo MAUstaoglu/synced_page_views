@@ -14,15 +14,6 @@ class SyncedPageViews extends StatefulWidget {
   /// Builder for secondary page items
   final IndexedWidgetBuilder secondaryItemBuilder;
 
-  /// Initial page index
-  final int initialPage;
-
-  /// Viewport fraction for primary PageView (default: 1.0)
-  final double primaryViewportFraction;
-
-  /// Viewport fraction for secondary PageView (default: 1.0)
-  final double secondaryViewportFraction;
-
   /// Configuration for the synchronized PageViews
   final SyncedPageViewsConfig config;
 
@@ -42,23 +33,40 @@ class SyncedPageViews extends StatefulWidget {
 
   /// Optional SyncedPageController to use
   /// If provided, this controller will be used instead of creating internal controllers
+  /// When using a controller, do not provide initialPage, primaryViewportFraction, or secondaryViewportFraction
   final SyncedPageController? controller;
+
+  /// Initial page index (only used when controller is null)
+  final int? initialPage;
+
+  /// Viewport fraction for primary PageView (only used when controller is null)
+  final double? primaryViewportFraction;
+
+  /// Viewport fraction for secondary PageView (only used when controller is null)
+  final double? secondaryViewportFraction;
 
   const SyncedPageViews({
     super.key,
     required this.itemCount,
     required this.primaryItemBuilder,
     required this.secondaryItemBuilder,
-    this.initialPage = 0,
-    this.primaryViewportFraction = 1.0,
-    this.secondaryViewportFraction = 1.0,
+    this.controller,
+    this.initialPage,
+    this.primaryViewportFraction,
+    this.secondaryViewportFraction,
     this.config = const SyncedPageViewsConfig(),
     this.onPageChanged,
     this.onPrimaryPageTap,
     this.onSecondaryPageTap,
     this.layoutBuilder,
-    this.controller,
-  });
+  }) : assert(
+          controller == null ||
+              (initialPage == null &&
+                  primaryViewportFraction == null &&
+                  secondaryViewportFraction == null),
+          'When providing a controller, do not specify initialPage, primaryViewportFraction, or secondaryViewportFraction. '
+          'The controller already defines these values.',
+        );
 
   @override
   State<SyncedPageViews> createState() => _SyncedPageViewsState();
@@ -88,16 +96,16 @@ class _SyncedPageViewsState extends State<SyncedPageViews>
       // Don't start sync - the SyncedPageController handles it
     } else {
       _primaryController = PageController(
-        initialPage: widget.initialPage,
-        viewportFraction: widget.primaryViewportFraction,
+        initialPage: widget.initialPage ?? 0,
+        viewportFraction: widget.primaryViewportFraction ?? 1.0,
       );
 
       _secondaryController = PageController(
-        initialPage: widget.initialPage,
-        viewportFraction: widget.secondaryViewportFraction,
+        initialPage: widget.initialPage ?? 0,
+        viewportFraction: widget.secondaryViewportFraction ?? 1.0,
       );
 
-      _currentPage = ValueNotifier<int>(widget.initialPage);
+      _currentPage = ValueNotifier<int>(widget.initialPage ?? 0);
       _ownsControllers = true;
 
       // Start syncing the controllers
